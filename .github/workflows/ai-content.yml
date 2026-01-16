@@ -1,0 +1,88 @@
+name: AI Content Manager
+
+on:
+  workflow_dispatch:
+    inputs:
+      content_type:
+        description: 'Content type (project/service)'
+        required: true
+        type: choice
+        options:
+          - project
+          - service
+      title:
+        description: 'Content title'
+        required: true
+      description:
+        description: 'Brief description'
+        required: true
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Generate AI Content
+        run: |
+          SLUG=$(echo "${{ github.event.inputs.title }}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+          DATE=$(date +%Y-%m-%d)
+          
+          if [ "${{ github.event.inputs.content_type }}" = "project" ]; then
+            cat > content/projects/${SLUG}.md << EOF
+          ---
+          title: "${{ github.event.inputs.title }}"
+          description: "${{ github.event.inputs.description }}"
+          date: "${DATE}"
+          intent_score: 0.95
+          business_outcome: "Delivered exceptional results"
+          tech_stack: ["Next.js 15", "TypeScript", "AI Integration"]
+          metrics:
+            - label: "Performance"
+              value: "+250%"
+            - label: "Lighthouse"
+              value: "99/100"
+          ---
+
+          ## Challenge
+
+          The client needed a modern, high-performance solution.
+
+          ## Solution
+
+          We implemented cutting-edge technology stack with AI integration.
+
+          ## Results
+
+          Exceeded all expectations with measurable business impact.
+          EOF
+          else
+            cat > content/services/${SLUG}.md << EOF
+          ---
+          title: "${{ github.event.inputs.title }}"
+          description: "${{ github.event.inputs.description }}"
+          ---
+
+          ## Overview
+
+          Premium service delivering exceptional value.
+
+          ## What We Deliver
+
+          - Strategic planning
+          - Technical implementation
+          - Ongoing optimization
+
+          ## Technologies
+
+          Next.js, React, TypeScript, AI/ML
+          EOF
+          fi
+      
+      - name: Commit and Push
+        run: |
+          git config user.name "AI Content Bot"
+          git config user.email "bot@agency.com"
+          git add content/
+          git commit -m "🤖 AI: Added new content - ${{ github.event.inputs.title }}"
+          git push

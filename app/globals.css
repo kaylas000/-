@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark text-light antialiased;
+  }
+}
+
+.neural-aura {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(142, 142, 147, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(142, 142, 147, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(142, 142, 147, 0.04) 0%, transparent 50%);
+  animation: aura 20s ease-in-out infinite;
+}
+
+@keyframes aura {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' /%3E%3C/svg%3E");
+  pointer-events: none;
+}
