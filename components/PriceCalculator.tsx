@@ -52,28 +52,28 @@ export default function PriceCalculator() {
   }
 
   return (
-    <div className="bg-accent/5 border border-accent/10 rounded-3xl p-8 md:p-12">
-      <div className="flex items-center gap-4 mb-8">
-        <Calculator className="w-8 h-8 text-accent" />
-        <h3 className="text-4xl font-black">Калькулятор проекта</h3>
+    <div className="bg-accent/5 border border-accent/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-12">
+      <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <Calculator className="w-6 sm:w-8 h-6 sm:h-8 text-accent flex-shrink-0" />
+        <h3 className="text-2xl sm:text-3xl md:text-4xl font-black">Калькулятор проекта</h3>
       </div>
 
       {/* Project Type */}
-      <div className="mb-8">
-        <label className="text-xl font-bold mb-4 block">Тип проекта</label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="mb-6 sm:mb-8">
+        <label className="text-base sm:text-lg md:text-xl font-bold mb-3 sm:mb-4 block">Тип проекта</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-2 sm:gap-3">
           {options.type.map((type) => (
             <button
               key={type.name}
               onClick={() => setSelected({ ...selected, type: type.name })}
-              className={`p-4 rounded-xl border-2 text-left transition-all ${
+              className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 text-left transition-all text-xs sm:text-sm ${
                 selected.type === type.name
                   ? 'border-accent bg-accent/10'
                   : 'border-accent/10 hover:border-accent/30'
               }`}
             >
               <div className="font-bold">{type.name}</div>
-              <div className="text-sm text-accent">
+              <div className="text-xs sm:text-sm text-accent">
                 from ${(type.price / 1000).toFixed(0)}k
               </div>
             </button>
@@ -82,33 +82,33 @@ export default function PriceCalculator() {
       </div>
 
       {/* Features */}
-      <div className="mb-8">
-        <label className="text-xl font-bold mb-4 block">Дополнительные функции</label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="mb-6 sm:mb-8">
+        <label className="text-base sm:text-lg md:text-xl font-bold mb-3 sm:mb-4 block">Дополнительные функции</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-2 sm:gap-3">
           {options.features.map((feature) => (
             <button
               key={feature.name}
               onClick={() => toggleFeature(feature.name)}
-              className={`p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
+              className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 text-left transition-all flex items-center gap-2 sm:gap-3 text-xs sm:text-sm ${
                 selected.features.includes(feature.name)
                   ? 'border-accent bg-accent/10'
                   : 'border-accent/10 hover:border-accent/30'
               }`}
             >
               <div
-                className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                className={`w-5 sm:w-6 h-5 sm:h-6 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                   selected.features.includes(feature.name)
                     ? 'border-accent bg-accent'
                     : 'border-accent/30'
                 }`}
               >
                 {selected.features.includes(feature.name) && (
-                  <Check className="w-4 h-4 text-dark" />
+                  <Check className="w-3 sm:w-4 h-3 sm:h-4 text-dark" />
                 )}
               </div>
-              <div className="flex-1">
-                <div className="font-bold">{feature.name}</div>
-                <div className="text-sm text-accent">
+              <div className="flex-1 min-w-0">
+                <div className="font-bold truncate">{feature.name}</div>
+                <div className="text-xs sm:text-sm text-accent">
                   +${(feature.price / 1000).toFixed(0)}k
                 </div>
               </div>
@@ -118,21 +118,21 @@ export default function PriceCalculator() {
       </div>
 
       {/* Timeline */}
-      <div className="mb-8">
-        <label className="text-xl font-bold mb-4 block">Сроки</label>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="mb-6 sm:mb-8">
+        <label className="text-base sm:text-lg md:text-xl font-bold mb-3 sm:mb-4 block">Сроки</label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
           {options.timeline.map((timeline) => (
             <button
               key={timeline.name}
               onClick={() => setSelected({ ...selected, timeline: timeline.name })}
-              className={`p-4 rounded-xl border-2 text-center transition-all ${
+              className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 text-center transition-all text-xs sm:text-sm ${
                 selected.timeline === timeline.name
                   ? 'border-accent bg-accent/10'
                   : 'border-accent/10 hover:border-accent/30'
               }`}
             >
-              <div className="font-bold">{timeline.name}</div>
-              <div className="text-sm text-accent">
+              <div className="font-bold truncate">{timeline.name}</div>
+              <div className="text-xs sm:text-sm text-accent">
                 {timeline.multiplier > 1 ? `×${timeline.multiplier}` : 'Standard'}
               </div>
             </button>
@@ -144,13 +144,13 @@ export default function PriceCalculator() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-dark border-2 border-accent rounded-2xl p-8 text-center"
+        className="bg-dark border-2 border-accent rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 text-center mt-6 sm:mt-8"
       >
-        <div className="text-accent text-sm mb-2">Ориентировочная стоимость</div>
-        <div className="text-6xl font-black mb-4">
+        <div className="text-accent text-xs sm:text-sm mb-1 sm:mb-2">Ориентировочная стоимость</div>
+        <div className="text-4xl sm:text-5xl md:text-6xl font-black mb-3 sm:mb-4">
           ${(calculatePrice() / 1000).toFixed(0)}k
         </div>
-        <button className="px-8 py-4 bg-light text-dark rounded-full font-bold hover:bg-accent transition-all">
+        <button className="px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 bg-light text-dark rounded-full font-bold hover:bg-accent transition-all text-xs sm:text-sm md:text-base">
           Получить предложение
         </button>
       </motion.div>

@@ -33,10 +33,10 @@ export default function Navigation() {
           scrolled ? 'bg-dark/80 backdrop-blur-xl border-b border-accent/10' : 'bg-transparent'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 md:py-6 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 md:py-6 flex justify-between items-center">
           <Link href="/">
             <motion.div
-              className="text-xl sm:text-2xl font-black tracking-tighter"
+              className="text-base sm:text-lg md:text-xl font-black tracking-tighter"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2 }}
             >
@@ -45,7 +45,7 @@ export default function Navigation() {
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-12">
+          <div className="hidden md:flex items-center gap-8 lg:gap-12">
             {navItems.map((item, i) => (
               <motion.div
                 key={item.name}
@@ -55,7 +55,7 @@ export default function Navigation() {
               >
                 <Link
                   href={item.href}
-                  className="text-accent hover:text-light transition-colors duration-300 font-medium"
+                  className="text-xs lg:text-sm text-accent hover:text-light transition-colors duration-300 font-medium whitespace-nowrap"
                 >
                   {item.name}
                 </Link>
@@ -64,7 +64,7 @@ export default function Navigation() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-4 sm:px-6 py-2 sm:py-3 bg-light text-dark rounded-full font-bold hover:bg-accent transition-colors duration-300 text-sm sm:text-base"
+              className="px-3 md:px-4 lg:px-6 py-2 md:py-2.5 lg:py-3 bg-light text-dark rounded-full font-bold hover:bg-accent transition-colors duration-300 text-xs md:text-sm lg:text-base whitespace-nowrap"
             >
               Начать проект
             </motion.button>

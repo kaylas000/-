@@ -42,7 +42,7 @@ export default function Hero() {
 
       <div className="max-w-6xl w-full relative z-10">
         <motion.h1
-          className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tighter mb-6 md:mb-8 leading-[0.9]"
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl xl:text-9xl font-black tracking-tighter mb-4 sm:mb-6 md:mb-8 leading-[1] sm:leading-[0.95] md:leading-[0.9]"
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
@@ -68,7 +68,7 @@ export default function Hero() {
         </motion.h1>
 
         <motion.p
-          className="text-sm sm:text-base md:text-xl lg:text-2xl text-accent max-w-2xl mb-8 md:mb-12 leading-relaxed"
+          className="text-xs sm:text-sm md:text-base lg:text-xl xl:text-2xl text-accent max-w-2xl mb-6 sm:mb-8 md:mb-12 leading-relaxed"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
