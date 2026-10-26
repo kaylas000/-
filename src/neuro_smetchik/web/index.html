@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Нейро-сметчик — локальный AI-ассистент сметчика: черновик сметы, контроль уверенности, версионирование и документы." />
+  <title>Нейро-сметчик — рабочее место сметчика</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Основная навигация">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">НС</div>
+      <div>
+        <div class="brand-title">Нейро-сметчик</div>
+        <div class="brand-sub">локальный AI-ассистент · v1.1</div>
+      </div>
+    </div>
+    <div class="perimeter" title="Данные не покидают периметр">
+      <span class="dot"></span> On-premise · без внешних AI-API
+    </div>
+    <nav class="nav" id="nav">
+      <div class="nav-group">РАБОЧЕЕ МЕСТО</div>
+      <button class="nav-item active" data-view="new"><span class="ni-icon">✎</span> Новая смета</button>
+      <button class="nav-item" data-view="estimates"><span class="ni-icon">▤</span> Сметы</button>
+      <button class="nav-item" data-view="catalog"><span class="ni-icon">⌕</span> Каталог расценок</button>
+      <button class="nav-item" data-view="notifications"><span class="ni-icon">◔</span> Уведомления <span class="badge-count" id="unreadBadge"></span></button>
+      <div class="nav-group">УПРАВЛЕНИЕ</div>
+      <button class="nav-item" data-view="monitoring"><span class="ni-icon">◈</span> Мониторинг и SLA</button>
+      <button class="nav-item" data-view="prompts"><span class="ni-icon">❝</span> Промпты</button>
+      <button class="nav-item" data-view="trace"><span class="ni-icon">⌁</span> Трассировка</button>
+      <button class="nav-item" data-view="audit"><span class="ni-icon">⛨</span> Аудит</button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="mini-note">Human-in-the-loop</div>
+      <div class="mini-text">Финальную ответственность за смету несёт утвердивший её человек.</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumbs"><span id="viewTitle">Новая смета</span> <span class="crumb-sep">/</span> <span class="crumb-muted" id="viewSub">черновик за ≤60 сек</span></div>
+      <div class="top-actions">
+        <label class="field-inline" for="roleSelect">Роль</label>
+        <select id="roleSelect" class="select-sm" aria-label="Текущая роль">
+          <option value="client">Клиент</option>
+          <option value="estimator" selected>Сметчик</option>
+          <option value="manager">Руководитель</option>
+          <option value="admin">Администратор</option>
+        </select>
+        <label class="mfa-toggle" title="MFA для руководителя/администратора"><input type="checkbox" id="mfaToggle" /> MFA</label>
+        <span class="user-chip" id="userChip">Иванов И.И.</span>
+      </div>
+    </header>
+
+    <main class="content" id="content">
+      <!-- ============================ НОВАЯ СМЕТА ============================ -->
+      <section class="view active" id="view-new" aria-label="Новая смета">
+        <div class="grid-2">
+          <div class="card hero-card">
+            <div class="card-head">
+              <div><h2>Опишите объект и объём работ</h2>
+                <p class="muted">Система извлечёт параметры, подберёт позиции из каталога и посчитает черновик. Все спорные позиции останутся на проверке человека.</p></div>
+              <span class="pill pill-blue">Parser → … → Document</span>
+            </div>
+            <label class="sr-only" for="requestText">Текст запроса</label>
+            <textarea id="requestText" rows="6" placeholder="Например: Отремонтировать ванную 6 м², плитка на стены и пол, замена сантехники, срочно, бюджет до 300 тыс.">Отремонтировать ванную 6 м², плитка на стены и пол, замена сантехники, срочно, бюджет до 300 тыс.</textarea>
+            <div class="examples" aria-label="Примеры запросов">
+              <button class="chip" data-example="Квартира 54 м² под ключ: демонтаж, штукатурка стен, шпаклевка, покраска, электрика, ламинат.">Квартира под ключ</button>
+              <button class="chip" data-example="Офис 120 м²: перегородки из ГКЛ, натяжной потолок, точечные светильники, вентиляция, напольное покрытие.">Офис 120 м²</button>
+              <button class="chip" data-example="Кухня 14 кв.м, укладка плитки на пол, покраска стен, установка розеток и выключателей.">Кухня</button>
+              <button class="chip" data-example="Ванная 8,5 квадратных метра: гидроизоляция, кафель, душевая кабина, унитаз, раковина, смеситель.">Ванная 8,5 м²</button>
+              <button class="chip" data-example="Нужно что-нибудь с потолком и стенами, площадь уточним позже.">Размытый запрос (эскалация)</button>
+            </div>
+            <div class="row-actions">
+              <div class="col-client"><label class="field-label" for="clientName">Заказчик</label>
+                <input id="clientName" type="text" placeholder="ООО «Заказчик»" /></div>
+              <button class="btn btn-primary" id="generateBtn">Сгенерировать черновик <span aria-hidden="true">→</span></button>
+            </div>
+            <div class="row-actions tight">
+              <label class="checkbox"><input type="checkbox" id="judgeBox" /> независимый LLM-ревью (если инференс включён)</label>
+              <label class="file-btn">Загрузить фото/скан <input type="file" id="visionFile" accept="image/jpeg,image/png,image/webp,application/pdf" hidden /></label>
+            </div>
+            <div id="visionResult"></div>
+          </div>
+
+          <div class="card pipeline-card">
+            <h2>Детерминированный пайплайн</h2>
+            <p class="muted">LLM не считает деньги и не придумывает цены. Каждая позиция обязана ссылаться на реальную запись <code>price_catalog</code>.</p>
+            <ol class="pipeline" id="pipelineStatic">
+              <li><span class="p-num">1</span><div><strong>Parser</strong><small>Строгая JSON-схема, retry ≤3</small></div></li>
+              <li><span class="p-num">2</span><div><strong>Clarification</strong><small>≤5 вопросов по критичным полям</small></div></li>
+              <li><span class="p-num">3</span><div><strong>Search</strong><small>Гибрид: semantic + keyword, p95 ≤500 мс</small></div></li>
+              <li><span class="p-num">4</span><div><strong>Matching</strong><small>Confidence: ≥0.85 / 0.5–0.85 / &lt;0.5</small></div></li>
+              <li><span class="p-num">5</span><div><strong>Calculation</strong><small>Decimal + независимый пересчёт</small></div></li>
+              <li><span class="p-num">6</span><div><strong>Validation</strong><small>Аномалии, дубли, полнота, judge</small></div></li>
+              <li><span class="p-num">7</span><div><strong>Document</strong><small>Excel / PDF / Гранд-Смета CSV</small></div></li>
+            </ol>
+            <div class="legend" aria-label="Легенда уверенности">
+              <span><i class="sw sw-green"></i> ≥0.85 авто</span>
+              <span><i class="sw sw-amber"></i> 0.5–0.85 проверка</span>
+              <span><i class="sw sw-red"></i> &lt;0.5 эскалация</span>
+            </div>
+          </div>
+        </div>
+        <div id="clarificationArea"></div>
+        <div id="estimateArea"></div>
+      </section>
+
+      <!-- ============================ СМЕТЫ ============================ -->
+      <section class="view" id="view-estimates">
+        <div class="card">
+          <div class="card-head"><div><h2>Реестр смет</h2><p class="muted">Версии неизменяемы: каждая правка создаёт новую версию с контрольной суммой.</p></div>
+            <button class="btn btn-ghost" id="refreshEstimates">Обновить</button></div>
+          <div id="estimatesList" class="table-wrap"><p class="muted">Загрузка…</p></div>
+        </div>
+        <div id="estimateArea2"></div>
+      </section>
+
+      <!-- ============================ КАТАЛОГ ============================ -->
+      <section class="view" id="view-catalog">
+        <div class="card">
+          <div class="card-head"><div><h2>Поиск по каталогу расценок</h2><p class="muted">Гибридный поиск: semantic (char-ngram TF-IDF) + keyword. В проде — Qdrant + embeddings.</p></div>
+            <span class="pill" id="catalogCount"></span></div>
+          <div class="row-actions">
+            <input id="catalogQuery" type="search" placeholder="штукатурка стен по маякам" value="штукатурка стен по маякам" />
+            <button class="btn btn-primary" id="catalogSearchBtn">Найти</button>
+            <button class="btn btn-ghost" id="freshnessBtn">Проверить актуальность цен</button>
+          </div>
+          <div id="catalogResults" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <!-- ============================ УВЕДОМЛЕНИЯ ============================ -->
+      <section class="view" id="view-notifications">
+        <div class="card">
+          <div class="card-head"><div><h2>Центр уведомлений</h2><p class="muted">Эскалации, готовность черновика, таймауты уточнений, дрейф модели.</p></div>
+            <button class="btn btn-ghost" id="refreshNotifications">Обновить</button></div>
+          <div id="notificationsList"></div>
+        </div>
+      </section>
+
+      <!-- ============================ МОНИТОРИНГ ============================ -->
+      <section class="view" id="view-monitoring">
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="grid-2">
+          <div class="card">
+            <h2>SLA и error budget</h2>
+            <div id="slaTable" class="table-wrap"></div>
+          </div>
+          <div class="card">
+            <h2>Циклы обратной связи</h2>
+            <div id="loopsList"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2>Контроль качества модели</h2><p class="muted">Golden test set, дрейф, актуальность каталога, план/факт.</p></div>
+            <div class="btn-row">
+              <button class="btn btn-ghost" id="goldenBtn">Golden-прогон</button>
+              <button class="btn btn-ghost" id="driftBtn">Drift check</button>
+              <button class="btn btn-ghost" id="freshnessBtn2">Freshness</button>
+            </div></div>
+          <div id="qualityReport" class="pre-box">Нажмите «Golden-прогон» для оценки точности на 122 эталонных запросах.</div>
+          <div class="grid-2 forms">
+            <form id="planFactForm" class="mini-form"><h3>Plan-Fact Loop</h3>
+              <label>ID сметы<input id="pfEstimate" placeholder="smt-..." required /></label>
+              <label>Фактическая сумма, ₽<input id="pfFact" type="number" step="0.01" required /></label>
+              <button class="btn btn-primary" type="submit">Записать факт</button></form>
+            <form id="feedbackForm" class="mini-form"><h3>Feedback Loop</h3>
+              <label>ID сметы<input id="fbEstimate" placeholder="smt-..." required /></label>
+              <label>Оценка<select id="fbRating"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></label>
+              <button class="btn btn-primary" type="submit">Отправить отзыв</button></form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ ПРОМПТЫ ============================ -->
+      <section class="view" id="view-prompts">
+        <div class="card">
+          <div class="card-head"><div><h2>Prompt Version Control</h2><p class="muted">Промпты вне кода: версии, canary, откат без деплоя. Каждый запуск пайплайна фиксирует версию промпта.</p></div>
+            <button class="btn btn-ghost" id="refreshPrompts">Обновить</button></div>
+          <div id="promptsList" class="table-wrap"></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><h3>Новая версия промпта</h3>
+            <form id="promptForm" class="mini-form">
+              <label>Сервис<select id="promptService"><option>parser</option><option>clarification</option><option>matching</option><option>validation_judge</option><option>vision</option><option>revision</option></select></label>
+              <label>Тело промпта<textarea id="promptBody" rows="5" placeholder="Вставьте текст системного промпта…"></textarea></label>
+              <label>Canary, % трафика<input id="promptCanary" type="number" min="0" max="100" value="0" /></label>
+              <label class="checkbox"><input type="checkbox" id="promptActivate" /> сразу активировать</label>
+              <button class="btn btn-primary" type="submit">Создать версию</button></form></div>
+          <div class="card"><h3>Управление версиями</h3>
+            <form id="promptActionForm" class="mini-form">
+              <label>Сервис<select id="paService"><option>parser</option><option>clarification</option><option>matching</option><option>validation_judge</option><option>vision</option><option>revision</option></select></label>
+              <label>Версия<input id="paVersion" placeholder="v1" required /></label>
+              <div class="btn-row"><button class="btn btn-primary" type="button" id="activateBtn">Активировать / откат</button>
+                <button class="btn btn-ghost" type="button" id="canaryBtn">Canary 25%</button></div>
+              <p class="muted small">Для записи нужна роль руководителя/администратора с MFA.</p></form></div>
+        </div>
+      </section>
+
+      <!-- ============================ ТРАССИРОВКА ============================ -->
+      <section class="view" id="view-trace">
+        <div class="card">
+          <div class="card-head"><div><h2>Сквозная трассировка (trace_id)</h2><p class="muted">История попыток, ошибок, версий промптов и моделей на каждом шаге пайплайна.</p></div></div>
+          <div class="row-actions"><input id="traceInput" placeholder="Вставьте trace_id из черновика сметы" /><button class="btn btn-primary" id="traceBtn">Показать</button></div>
+          <div id="traceResult"></div>
+        </div>
+      </section>
+
+      <!-- ============================ АУДИТ ============================ -->
+      <section class="view" id="view-audit">
+        <div class="card">
+          <div class="card-head"><div><h2>Неизменяемый журнал безопасности</h2><p class="muted">Append-only с хэш-цепочкой: любая правка нарушает целостность. Доступ — руководитель/администратор с MFA.</p></div>
+            <button class="btn btn-ghost" id="refreshAudit">Обновить</button></div>
+          <div id="auditResult"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/static/app.js" defer></script>
+</body>
+</html>

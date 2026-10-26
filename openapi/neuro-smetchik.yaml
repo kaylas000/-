@@ -1,0 +1,1056 @@
+openapi: 3.1.0
+info:
+  title: Нейро-сметчик API
+  description: Локальная система поддержки составления смет. Human-in-the-loop, Decimal-расчёты,
+    immutable-версии, трассировка trace_id, Prompt Version Control, защита от prompt
+    injection. Данные не покидают периметр.
+  version: 1.1.0-mvp
+paths:
+  /api/v1/health:
+    get:
+      tags:
+      - system
+      summary: Проверка доступности и локальности контура
+      operationId: health_api_v1_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Health Api V1 Health Get
+  /api/v1/meta:
+    get:
+      tags:
+      - system
+      summary: Конфигурация порогов и справочники для UI
+      operationId: meta_api_v1_meta_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Meta Api V1 Meta Get
+  /api/v1/requests:
+    post:
+      tags:
+      - pipeline
+      summary: Создать черновик сметы (User Flow 3.1)
+      operationId: create_request_api_v1_requests_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Create Request Api V1 Requests Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/clarification/{session_id}/answer:
+    post:
+      tags:
+      - clarification
+      summary: Ответ/пропуск в Clarification Loop с пересчётом версии
+      operationId: clarification_answer_api_v1_clarification__session_id__answer_post
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClarificationIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Clarification Answer Api V1 Clarification  Session
+                  Id  Answer Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/clarification/{session_id}/timeout:
+    post:
+      tags:
+      - clarification
+      summary: Таймаут ожидания сметчика -> уведомление + отложенная обработка
+      operationId: clarification_timeout_api_v1_clarification__session_id__timeout_post
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Clarification Timeout Api V1 Clarification  Session
+                  Id  Timeout Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/estimates:
+    get:
+      tags:
+      - estimates
+      summary: Список смет
+      operationId: estimates_api_v1_estimates_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Estimates Api V1 Estimates Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/estimates/{smeta_id}:
+    get:
+      tags:
+      - estimates
+      summary: Смета с позициями и итогами
+      operationId: get_estimate_api_v1_estimates__smeta_id__get
+      parameters:
+      - name: smeta_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Smeta Id
+      - name: version
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Version
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Estimate Api V1 Estimates  Smeta Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/estimates/{smeta_id}/versions:
+    get:
+      tags:
+      - estimates
+      summary: История immutable-версий
+      operationId: versions_api_v1_estimates__smeta_id__versions_get
+      parameters:
+      - name: smeta_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Smeta Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Versions Api V1 Estimates  Smeta Id  Versions Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/estimates/{smeta_id}/diff:
+    get:
+      tags:
+      - estimates
+      summary: Diff-view двух версий
+      operationId: get_diff_api_v1_estimates__smeta_id__diff_get
+      parameters:
+      - name: smeta_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Smeta Id
+      - name: from_version
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+          title: From Version
+      - name: to_version
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 2
+          title: To Version
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Diff Api V1 Estimates  Smeta Id  Diff Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/estimates/{smeta_id}/revisions:
+    post:
+      tags:
+      - revisions
+      summary: Применить дельту правок
+      operationId: new_revision_api_v1_estimates__smeta_id__revisions_post
+      parameters:
+      - name: smeta_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Smeta Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevisionIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response New Revision Api V1 Estimates  Smeta Id  Revisions
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/estimates/{smeta_id}/approve:
+    post:
+      tags:
+      - estimates
+      summary: Утверждение сметы (принцип четырёх глаз выше порога)
+      operationId: approve_api_v1_estimates__smeta_id__approve_post
+      parameters:
+      - name: smeta_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Smeta Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Approve Api V1 Estimates  Smeta Id  Approve Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/estimates/{smeta_id}/documents/{fmt}:
+    get:
+      tags:
+      - documents
+      summary: Excel / PDF / CSV для Гранд-Смета
+      operationId: get_document_api_v1_estimates__smeta_id__documents__fmt__get
+      parameters:
+      - name: smeta_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Smeta Id
+      - name: fmt
+        in: path
+        required: true
+        schema:
+          enum:
+          - xlsx
+          - pdf
+          - csv
+          type: string
+          title: Fmt
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/estimates/{smeta_id}/feedback:
+    post:
+      tags:
+      - feedback
+      summary: Feedback Loop
+      operationId: post_feedback_api_v1_estimates__smeta_id__feedback_post
+      parameters:
+      - name: smeta_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Smeta Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Post Feedback Api V1 Estimates  Smeta Id  Feedback
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/estimates/{smeta_id}/plan-fact:
+    post:
+      tags:
+      - feedback
+      summary: Plan-Fact Loop
+      operationId: post_plan_fact_api_v1_estimates__smeta_id__plan_fact_post
+      parameters:
+      - name: smeta_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Smeta Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanFactIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Post Plan Fact Api V1 Estimates  Smeta Id  Plan Fact
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/catalog:
+    get:
+      tags:
+      - catalog
+      summary: Каталог расценок + покрытие
+      operationId: catalog_all_api_v1_catalog_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Catalog All Api V1 Catalog Get
+  /api/v1/catalog/search:
+    get:
+      tags:
+      - catalog
+      summary: Гибридный поиск top-N (SLA p95 <= 500 мс)
+      operationId: catalog_search_api_v1_catalog_search_get
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 300
+          title: Q
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 8
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Catalog Search Api V1 Catalog Search Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/matching:
+    get:
+      tags:
+      - matching
+      summary: Контракт Matching Service (Приложение Г)
+      operationId: matching_contract_api_v1_matching_get
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 300
+          title: Q
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Matching Contract Api V1 Matching Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/vision:
+    post:
+      tags:
+      - vision
+      summary: Загрузка фото/скана (MIME, размер, anti-injection)
+      operationId: vision_upload_api_v1_vision_post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_vision_upload_api_v1_vision_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Vision Upload Api V1 Vision Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/prompts:
+    get:
+      tags:
+      - prompts
+      summary: Версии системных промптов
+      operationId: prompts_api_v1_prompts_get
+      parameters:
+      - name: service
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Service
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Prompts Api V1 Prompts Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - prompts
+      summary: Создать версию промпта (draft/canary/active)
+      operationId: prompt_create_api_v1_prompts_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Prompt Create Api V1 Prompts Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/prompts/activate:
+    post:
+      tags:
+      - prompts
+      summary: Активация/ОТКАТ версии без деплоя кода
+      operationId: prompt_activate_api_v1_prompts_activate_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptActionIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Prompt Activate Api V1 Prompts Activate Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/prompts/canary:
+    post:
+      tags:
+      - prompts
+      summary: Canary-тестирование версии на доле трафика
+      operationId: prompt_canary_api_v1_prompts_canary_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptActionIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Prompt Canary Api V1 Prompts Canary Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/notifications:
+    get:
+      tags:
+      - monitoring
+      summary: Журнал уведомлений по роли
+      operationId: notifications_api_v1_notifications_get
+      parameters:
+      - name: unread_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Unread Only
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Notifications Api V1 Notifications Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/notifications/{notification_id}/read:
+    post:
+      tags:
+      - monitoring
+      summary: Notification Read
+      operationId: notification_read_api_v1_notifications__notification_id__read_post
+      parameters:
+      - name: notification_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Notification Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Notification Read Api V1 Notifications  Notification
+                  Id  Read Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/metrics:
+    get:
+      tags:
+      - monitoring
+      summary: SLA, дрейф, error budget, состояние циклов
+      operationId: get_metrics_api_v1_metrics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Get Metrics Api V1 Metrics Get
+  /api/v1/admin/golden:
+    post:
+      tags:
+      - monitoring
+      summary: Regression-прогон на golden test set
+      operationId: golden_eval_api_v1_admin_golden_post
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Golden Eval Api V1 Admin Golden Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/drift:
+    post:
+      tags:
+      - monitoring
+      summary: Model Drift Loop
+      operationId: drift_api_v1_admin_drift_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Drift Api V1 Admin Drift Post
+  /api/v1/admin/freshness:
+    post:
+      tags:
+      - monitoring
+      summary: Data Freshness Loop
+      operationId: freshness_api_v1_admin_freshness_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Freshness Api V1 Admin Freshness Post
+  /api/v1/admin/trace/{trace_id}:
+    get:
+      tags:
+      - monitoring
+      summary: Сквозная трассировка пайплайна
+      operationId: trace_api_v1_admin_trace__trace_id__get
+      parameters:
+      - name: trace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Trace Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Trace Api V1 Admin Trace  Trace Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/audit:
+    get:
+      tags:
+      - monitoring
+      summary: Неизменяемый журнал безопасности
+      operationId: audit_log_api_v1_admin_audit_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 100
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Audit Log Api V1 Admin Audit Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/events/{smeta_id}:
+    get:
+      tags:
+      - monitoring
+      summary: Event Sourcing по смете
+      operationId: events_api_v1_admin_events__smeta_id__get
+      parameters:
+      - name: smeta_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Smeta Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Events Api V1 Admin Events  Smeta Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/corrections:
+    get:
+      tags:
+      - monitoring
+      summary: Исправления человека (обучение)
+      operationId: corrections_api_v1_admin_corrections_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Corrections Api V1 Admin Corrections Get
+  /api/v1/admin/parser-preview:
+    get:
+      tags:
+      - debug
+      summary: Детерминированный разбор запроса без записи
+      operationId: parser_preview_api_v1_admin_parser_preview_get
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 3
+          maxLength: 2000
+          title: Q
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Parser Preview Api V1 Admin Parser Preview Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    Body_vision_upload_api_v1_vision_post:
+      properties:
+        file:
+          type: string
+          format: binary
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_vision_upload_api_v1_vision_post
+    ClarificationIn:
+      properties:
+        answer:
+          type: string
+          title: Answer
+          default: ''
+        skip:
+          type: boolean
+          title: Skip
+          default: false
+      type: object
+      title: ClarificationIn
+    FeedbackIn:
+      properties:
+        rating:
+          type: integer
+          maximum: 5.0
+          minimum: 1.0
+          title: Rating
+          default: 5
+        comment:
+          type: string
+          title: Comment
+          default: ''
+        correction_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Correction Id
+      type: object
+      title: FeedbackIn
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    PlanFactIn:
+      properties:
+        fact_total:
+          type: string
+          title: Fact Total
+        notes:
+          type: string
+          title: Notes
+          default: ''
+      type: object
+      required:
+      - fact_total
+      title: PlanFactIn
+    PromptActionIn:
+      properties:
+        service:
+          type: string
+          title: Service
+        version:
+          type: string
+          title: Version
+        canary_percent:
+          type: integer
+          title: Canary Percent
+          default: 0
+      type: object
+      required:
+      - service
+      - version
+      title: PromptActionIn
+    PromptIn:
+      properties:
+        service:
+          type: string
+          title: Service
+        body:
+          type: string
+          title: Body
+        author:
+          type: string
+          title: Author
+          default: estimator
+        canary_percent:
+          type: integer
+          title: Canary Percent
+          default: 0
+        activate:
+          type: boolean
+          title: Activate
+          default: false
+      type: object
+      required:
+      - service
+      - body
+      title: PromptIn
+    RequestIn:
+      properties:
+        text:
+          type: string
+          maxLength: 8000
+          minLength: 3
+          title: Text
+          description: Запрос на естественном языке
+        client:
+          type: string
+          title: Client
+          default: ''
+        source_type:
+          type: string
+          enum:
+          - text
+          - voice
+          - photo
+          - scan
+          title: Source Type
+          default: text
+        use_llm_judge:
+          type: boolean
+          title: Use Llm Judge
+          default: false
+      type: object
+      required:
+      - text
+      title: RequestIn
+    RevisionIn:
+      properties:
+        operations:
+          items:
+            type: object
+          type: array
+          title: Operations
+        reason:
+          type: string
+          title: Reason
+          default: Правки сметчика
+        revision_text:
+          type: string
+          title: Revision Text
+          default: ''
+      type: object
+      title: RevisionIn
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

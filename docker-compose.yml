@@ -1,0 +1,137 @@
+# Справочный шаблон on-prem-стека (ТЗ 4.3–4.5).
+# MVP запускается без GPU: `docker compose up -d api` ( SQLite + детерминированный парсер ).
+# Прод-контур: `--profile gpu --profile core --profile monitoring`.
+#
+# Сетевая изоляция (ТЗ 4.4):
+#   * сеть `data` доступна только сервисам приложения;
+#   * vLLM доступен только из сети `app`;
+#   * исходящий трафик к внешним AI-API закрывается правилами firewall хоста
+#     (Docker сам по себе egress не ограничивает). Пример правила:
+#     iptables -A DOCKER-USER -d api.openai.com -j REJECT
+#   * VPN + MFA для администраторов — на уровне хост-шлюза.
+
+services:
+  api:
+    build: .
+    container_name: neuro-smetchik-api
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: staging
+      DB_PATH: /app/data/neuro_smetchik.db
+      LLM_ENABLED: "false"          # включить true вместе с профилем gpu
+      LLM_BASE_URL: http://vllm:8000/v1
+      LLM_MODEL: qwen2.5-32b-instruct
+      LLM_ALLOWED_HOSTS: 127.0.0.1,localhost,vllm,llm,host.docker.internal
+      COMPANY_NAME: "ООО «СтройИнвест»"
+    volumes:
+      - app-data:/app/data
+    networks: [dmz, app, data]
+    depends_on: [postgres, redis]
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: ["python", "-m", "neuro_smetchik.worker"]
+    environment:
+      APP_ENV: staging
+      DB_PATH: /app/data/neuro_smetchik.db
+    volumes:
+      - app-data:/app/data
+    networks: [app, data]
+    profiles: [queue]
+    restart: unless-stopped
+
+  vllm:
+    image: vllm/vllm-openai:latest
+    command: ["--model", "Qwen/Qwen2.5-32B-Instruct", "--max-model-len", "8192"]
+    environment:
+      NVIDIA_VISIBLE_DEVICES: "0"
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+    volumes:
+      - model-weights:/root/.cache/huggingface
+    networks: [app]
+    profiles: [gpu]
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: neuro_smetchik
+      POSTGRES_USER: smetchik
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+    secrets: [pg_password]
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks: [data]
+    profiles: [core]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    networks: [app]
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks: [data]
+    profiles: [core]
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_password
+    secrets: [minio_user, minio_password]
+    volumes:
+      - minio-data:/data
+    networks: [data]
+    profiles: [core]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom-data:/prometheus
+    networks: [app]
+    profiles: [monitoring]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks: [app]
+    profiles: [monitoring]
+    restart: unless-stopped
+
+networks:
+  dmz: {}
+  app: { internal: true }
+  data: { internal: true }
+
+volumes:
+  app-data: {}
+  pg-data: {}
+  qdrant-data: {}
+  minio-data: {}
+  prom-data: {}
+  grafana-data: {}
+  model-weights: {}
+
+# В проде секреты создаются в Vault / Docker secrets, НЕ в репозитории.
+secrets:
+  pg_password: { external: true }
+  minio_user: { external: true }
+  minio_password: { external: true }

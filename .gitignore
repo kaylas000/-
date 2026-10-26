@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Runtime data (generated locally, never committed)
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/exports/
+data/uploads/
+data/price_catalog.json
+data/golden_set.json
+data/typical_compositions.json
+*.xlsx
+*.pdf
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets
+.env
+*.pem
+*.key
